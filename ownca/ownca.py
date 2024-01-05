@@ -20,7 +20,7 @@ from cryptography.x509.oid import NameOID
 from voluptuous import Any, MultipleInvalid, Schema
 
 from ._constants import (CA_CERT, CA_CERTS_DIR, CA_CRL, CA_CSR, CA_KEY,
-                         CA_PUBLIC_KEY, COUNTRY_REGEX, HOSTNAME_REGEX, OIDS)
+                         CA_PUBLIC_KEY, COUNTRY_REGEX, HOSTNAME_REGEX, OIDS, TLS_ROLE)
 from .crypto import keys
 from .crypto.certs import ca_crl, ca_sign_csr, issue_cert, issue_csr
 from .exceptions import (OwnCAInvalidDataStructure, OwnCAFatalError,
@@ -878,6 +878,7 @@ class CertificateAuthority:
         public_exponent=65537,
         key_size=2048,
         ca=True,
+        tls_role=TLS_ROLE.NONE,
     ):
         """
         Issues a new certificate signed by the CA
@@ -907,6 +908,9 @@ class CertificateAuthority:
         :type key_size: int, default: 2048
         :param ca: Certificate is CA or not.
         :type ca: bool, default True.
+        :param type: [Optional] for TLS e.g. openVPN only, TLS type
+        :type tls_type: enum TLS_TYPE.
+
 
         :return: host object
         :rtype: ``ownca.ownca.HostCertificate``
@@ -966,6 +970,7 @@ class CertificateAuthority:
                 dns_names=dns_names,
                 oids=oids,
                 ca=ca,
+                tls_role=tls_role,
             )
 
             store_file(

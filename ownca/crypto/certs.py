@@ -7,9 +7,11 @@ Copyright (c) 2020 Kairo de Araujo
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
-from cryptography.x509.oid import NameOID
+from cryptography.x509.oid import NameOID, ExtendedKeyUsageOID
 import datetime
 import uuid
+
+from ownca._constants import TLS_ROLE
 
 one_day = datetime.timedelta(1, 0, 0)
 
@@ -200,7 +202,7 @@ def issue_cert(
     return _valid_cert(certificate)
 
 
-def issue_csr(key=None, common_name=None, dns_names=None, oids=None, ca=True):
+def issue_csr(key=None, common_name=None, dns_names=None, oids=None, ca=True, tls_role=TLS_ROLE.NONE):
     """
     Issue a new CSR (Certificate Signing Request)
 
@@ -232,6 +234,19 @@ def issue_csr(key=None, common_name=None, dns_names=None, oids=None, ca=True):
     csr_builder = csr_builder.add_extension(
         x509.BasicConstraints(ca=ca, path_length=None), critical=False
     )
+
+    # Hack to include the TLS role (Client/Server) for e.g. OpenVPN
+    if tls_role == TLS_ROLE.SERVER:
+        csr_builder = csr_builder.add_extension(
+            x509.ExtendedKeyUsage((ExtendedKeyUsageOID.SERVER_AUTH,)),
+            critical=False
+        )
+    elif tls_role == TLS_ROLE.CLIENT:
+        csr_builder = csr_builder.add_extension(
+            x509.ExtendedKeyUsage((ExtendedKeyUsageOID.CLIENT_AUTH,)),
+            critical=False
+        )
+
     csr = csr_builder.sign(
         private_key=key, algorithm=hashes.SHA256(), backend=default_backend()
     )
@@ -298,6 +313,15 @@ def ca_sign_csr(ca_cert, ca_key, csr, public_key, maximum_days=None, ca=True):
         ),
         critical=False,
     )
+
+    # hack to include the extendedKeyUsage parameters
+    for extension in csr.extensions:
+        if extension._oid._name == 'extendedKeyUsage':
+            certificate = certificate.add_extension(
+                extension.value,
+                extension.critical
+            )
+
     certificate = certificate.sign(
         private_key=ca_key,
         algorithm=hashes.SHA256(),

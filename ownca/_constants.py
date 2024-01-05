@@ -4,7 +4,7 @@
 Copyright (c) 2018-2020 Kairo de Araujo
 """
 import os
-
+from enum import Enum
 
 # CA directories and files
 CA_PRIVATE_DIR = "private"
@@ -25,6 +25,13 @@ OIDS = [
     "organization_unit_name",
     "email_address",
 ]
+
+
+# TLS types
+class TLS_ROLE(Enum):
+    NONE = None
+    SERVER = 'server'
+    CLIENT = 'client'
 
 
 # Regular Expressions
